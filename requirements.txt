@@ -1,0 +1,38 @@
+# MiA-RAG Core
+torch>=2.0.0
+transformers>=4.51.0
+sentence-transformers>=2.7.0
+peft>=0.14.0
+numpy
+tiktoken
+sentencepiece
+
+# API
+openai>=1.0.0
+httpx
+
+# Web Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
+
+# Database
+sqlalchemy>=1.4.0,<3.0
+
+# LightRAG (installed separately)
+# pip install lightrag-hku
+
+# Utilities
+python-dotenv
+huggingface_hub
+jieba
+
+# Graph algorithms (for coarse channel)
+networkx>=3.0
+python-louvain>=0.16
+
+# SM4 encryption (for federation)
+sm4

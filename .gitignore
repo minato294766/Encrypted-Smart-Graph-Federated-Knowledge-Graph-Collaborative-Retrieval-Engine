@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# Data & models (太大不传)
+mia_rag_storage/
+models/**/*.bin
+models/**/*.safetensors
+*.whl
+
+# Secrets
+.env
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads & logs
+uploads/
+audit_logs/
+*.db
+*.sqlite
