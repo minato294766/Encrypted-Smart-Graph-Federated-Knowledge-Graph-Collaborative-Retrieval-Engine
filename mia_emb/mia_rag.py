@@ -505,7 +505,7 @@ class MiARAG:
                 "coarse_summary": result.coarse.subgraph_summary,
             },
             "evidence": [
-                {"source": e.source, "content": e.content, "score": e.score, "type": e.type, "name": e.name}
+                {"source": e.source, "content": e.content, "score": e.relevance, "type": e.type, "name": e.name}
                 for e in result.evidence
             ],
             "metadata": {
