@@ -7,12 +7,12 @@ Contract (matches frontend central_server.py):
 
 Usage:
     # Single node
-    python node_server.py --port 8001
+    python node_server.py
 
     # Multiple nodes (for testing federation)
-    python node_server.py --port 8001
-    python node_server.py --port 8002
-    python node_server.py --port 8003
+    python node_server.py --port 6006
+    python node_server.py --port 6007
+    python node_server.py --port 6008
 
 Env vars:
     DEEPSEEK_API_KEY         DeepSeek API key
@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="MiA-RAG Node Server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Listen address (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8001, help="Node port (default: 8001)")
+    parser.add_argument("--port", type=int, default=6006, help="Node port (default: 6006)")
     args = parser.parse_args()
 
     uvicorn.run(app, host=args.host, port=args.port)
