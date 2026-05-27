@@ -1,0 +1,29 @@
+{
+  "source": {
+    "kind": "pyvis_html",
+    "path": "C:\\Users\\Admin\\final\\newgraph.html",
+    "nodeCount": 300,
+    "edgeCount": 454,
+    "graphBytes": 495755
+  },
+  "output": {
+    "nodeCount": 300,
+    "edgeCount": 315,
+    "graphBytes": 185726,
+    "nodeRatio": 1.0,
+    "sizeRatio": 0.3746
+  },
+  "constraints": {
+    "targetNodeCount": 300,
+    "minCenterTrees": 5,
+    "actualCenterTrees": 5,
+    "centerRoots": [
+      "民法典",
+      "债权人",
+      "债务人",
+      "第三人",
+      "出卖人"
+    ],
+    "translationMode": "google-gtx"
+  }
+}

@@ -1,0 +1,21 @@
+/* Google Fonts: Playfair Display + Lora (for Window 4 Newsprint system) */
+/* Must be declared before @import "tailwindcss" so browsers process the URL @import first. */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Lora:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  min-height: 100dvh;
+}
+
+body {
+  background-color: #ffffff;
+  color: #0f172a;
+}

@@ -1,0 +1,16 @@
+{
+  "activeDataUrl": "/trace/trace-knowledge-graph-reduced.json",
+  "statsUrl": "/trace/trace-knowledge-graph-stats.json",
+  "generatedAt": "2026-04-21T23:08:16",
+  "sourceKind": "pyvis_html",
+  "sourcePath": "C:\\Users\\Admin\\final\\newgraph.html",
+  "targetNodeCount": 300,
+  "centerRoots": [
+    "民法典",
+    "债权人",
+    "债务人",
+    "第三人",
+    "出卖人"
+  ],
+  "translationMode": "google-gtx"
+}

@@ -1,0 +1,11 @@
+{
+  "source_html": "C:/Users/Admin/final/newgraph.html",
+  "source_graphml": null,
+  "output_json": "apps/main-platform/public/trace/trace-knowledge-graph-reduced.json",
+  "output_stats": "apps/main-platform/public/trace/trace-knowledge-graph-stats.json",
+  "output_manifest": "apps/main-platform/public/trace/trace-knowledge-graph-manifest.json",
+  "translation_cache": "apps/main-platform/public/trace/trace-translation-cache.json",
+  "target_node_count": 300,
+  "min_center_trees": 5,
+  "online_translate": true
+}

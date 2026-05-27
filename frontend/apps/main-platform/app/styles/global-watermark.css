@@ -1,0 +1,12 @@
+.global-watermark-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  user-select: none;
+  opacity: 1;
+  background-image: var(--wm-text-pattern), var(--wm-text-pattern), var(--wm-noise-pattern);
+  background-repeat: repeat, repeat, repeat;
+  background-size: var(--wm-text-size, 176px 112px), var(--wm-text-size, 176px 112px), 96px 96px;
+  background-position: 0 0, var(--wm-offset-x, 88px) var(--wm-offset-y, 56px), 0 0;
+}

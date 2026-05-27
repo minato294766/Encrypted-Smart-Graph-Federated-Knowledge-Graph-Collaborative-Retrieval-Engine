@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ChatConversation {
+  id           String        @id @default(cuid())
+  ownerAccount String        @default("default")
+  mode         String
+  title        String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  messages     ChatMessage[]
+
+  @@index([ownerAccount, updatedAt(sort: Desc)])
+  @@index([mode, updatedAt(sort: Desc)])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  evidenceJson   String?
+  createdAt      DateTime         @default(now())
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model NodeCluster {
+  id           String      @id @default(cuid())
+  ownerAccount String
+  name         String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  files        NodeFile[]
+
+  @@index([ownerAccount, updatedAt(sort: Desc)])
+  @@unique([ownerAccount, name])
+}
+
+model NodeFile {
+  id           String          @id @default(cuid())
+  clusterId    String
+  ownerAccount String
+  name         String
+  size         Int
+  mimeType     String
+  localPath    String?
+  textContent  String?
+  contentBase64 String?
+  addedAt      DateTime        @default(now())
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  cluster      NodeCluster     @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  chunks       NodeFileChunk[]
+
+  @@index([ownerAccount, createdAt(sort: Desc)])
+  @@index([clusterId, createdAt(sort: Desc)])
+}
+
+model NodeFileChunk {
+  id           String            @id @default(cuid())
+  fileId       String
+  ownerAccount String
+  chunkIndex   Int
+  content      String
+  createdAt    DateTime          @default(now())
+  file         NodeFile          @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  embedding    NodeFileEmbedding?
+
+  @@unique([fileId, chunkIndex])
+  @@index([ownerAccount, createdAt(sort: Desc)])
+}
+
+model NodeFileEmbedding {
+  id           String        @id @default(cuid())
+  chunkId      String        @unique
+  ownerAccount String
+  vectorJson   Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chunk        NodeFileChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([ownerAccount, updatedAt(sort: Desc)])
+}
+
+model NodeAuditLog {
+  id           String   @id @default(cuid())
+  ownerAccount String
+  actor        String
+  action       String
+  type         String
+  targetId     String?
+  detail       Json?
+  createdAt    DateTime @default(now())
+
+  @@index([ownerAccount, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+}
+
+model NodeStorageMeta {
+  id           String   @id @default(cuid())
+  ownerAccount String
+  key          String
+  value        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([ownerAccount, key])
+}
+
+// ── Auth / Admin models ───────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+}
+
+enum NodeType {
+  NORMAL
+  CENTER
+}
+
+enum RequestType {
+  REGISTER_ACCOUNT
+  CHANGE_NODE_NAME
+  CHANGE_NODE_LOCATION
+  APPLY_CENTER_NODE
+  REVERT_NORMAL_NODE
+  CONFIG_JUDGE_MODEL
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  account      String    @unique
+  passwordHash String
+  role         UserRole  @default(USER)
+  status       UserStatus @default(PENDING)
+  nodeType     NodeType  @default(NORMAL)
+  nodeName     String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  initiatedRequests AdminActionRequest[] @relation("Applicant")
+  handledRequests   AdminActionRequest[] @relation("Handler")
+
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model AdminActionRequest {
+  id          String        @id @default(cuid())
+  requestType RequestType
+  status      RequestStatus @default(PENDING)
+  remark      String        @default("")
+  applicantId String
+  handlerId   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  applicant User  @relation("Applicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  handler   User? @relation("Handler", fields: [handlerId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([applicantId, createdAt(sort: Desc)])
+}
+
+model AdminActionHistory {
+  id          String      @id @default(cuid())
+  requestType RequestType
+  remark      String      @default("")
+  accountName String
+  handlerName String
+  approvedAt  DateTime    @default(now())
+
+  @@index([approvedAt(sort: Desc)])
+}

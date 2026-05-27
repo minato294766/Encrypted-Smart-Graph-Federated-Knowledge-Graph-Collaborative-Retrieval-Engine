@@ -1,0 +1,2 @@
+﻿app/windows/macro/components/D3Sandbox.tsx(24,78): error TS2307: Cannot find module 'geojson' or its corresponding type declarations.
+app/windows/macro/components/D3Sandbox.tsx(159,16): error TS7006: Parameter 'd' implicitly has an 'any' type.

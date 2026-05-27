@@ -1,0 +1,336 @@
+/* ========== Window 1 · SVG Login Page ========== */
+
+.login-svg-page {
+  --w1-font-family: "DingTalk JinBuTi", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: var(--w1-font-family);
+}
+
+.login-svg-page,
+.login-svg-page *,
+.login-svg-page *::before,
+.login-svg-page *::after {
+  font-family: var(--w1-font-family) !important;
+}
+
+.login-beams-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.17;
+  filter: saturate(0.9) contrast(0.98) brightness(1.01);
+}
+
+.beams-background-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.login-svg-canvas {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* foreignObject content inside SVG */
+.svg-text-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: clamp(14px, 1.1vw, 20px);
+  box-sizing: border-box;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+}
+
+/* ========== Intro (Stage 1) ========== */
+
+.svg-intro {
+  color: #3152f4;
+}
+
+.svg-headline {
+  margin: 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(10px, 1.1vw, 20px);
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  max-width: none;
+  color: #3152f4;
+}
+
+.svg-headline-main {
+  display: block;
+  font-size: clamp(40px, 2.25vw, 72px);
+  line-height: 1.1;
+}
+
+.svg-headline-sub {
+  display: block;
+  font-size: clamp(22px, 1.22vw, 34px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.svg-text-content.is-inverted .svg-headline {
+  color: #ffffff;
+}
+
+/* ========== Login Form (Stage 2) ========== */
+
+.svg-login-form {
+  width: min(320px, 100%);
+  margin: auto;
+  position: relative;
+  color: #ffffff;
+}
+
+.svg-form-switcher {
+  position: relative;
+  min-height: 19.5rem;
+}
+
+.svg-form-panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 1.1rem;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.34s ease, transform 0.34s ease;
+}
+
+.svg-form-panel.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.svg-form-panel.is-inactive {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.svg-field {
+  position: relative;
+}
+
+.svg-field input {
+  width: 100%;
+  height: 2.35rem;
+  padding: 0 0 0.35rem;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.34);
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.svg-field input::placeholder {
+  color: transparent;
+}
+
+.svg-field input:focus {
+  border-bottom-color: #ffffff;
+}
+
+.svg-field label {
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.68);
+  pointer-events: none;
+  transition: transform 0.2s, font-size 0.2s, color 0.2s;
+}
+
+.svg-field input:focus ~ label,
+.svg-field input:not(:placeholder-shown) ~ label {
+  transform: translateY(-1.5rem) scale(0.82);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.svg-field-pwd {
+  padding-right: 3.5rem;
+}
+
+.svg-toggle-pwd {
+  position: absolute;
+  right: 0;
+  top: 0.45rem;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  padding: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg-toggle-pwd:hover {
+  color: #ffffff;
+}
+
+.svg-eye-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+}
+
+.svg-eye-icon-svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.svg-eye-icon-svg path,
+.svg-eye-icon-svg circle,
+.svg-eye-icon-svg line {
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svg-eye-icon-svg circle {
+  fill: currentColor;
+  fill-opacity: 0.2;
+}
+
+.svg-eye-icon-slash {
+  opacity: 1;
+  transition: opacity 0.18s ease;
+}
+
+.svg-eye-icon-slash.is-hidden {
+  opacity: 0;
+}
+
+.svg-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+}
+
+.svg-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.svg-checkbox input {
+  accent-color: #ffffff;
+}
+
+.svg-login-form a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.svg-submit {
+  height: 2.45rem;
+  margin-top: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.svg-submit:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.svg-submit:disabled {
+  cursor: default;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.svg-form-actions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.svg-submit-secondary {
+  margin-top: 0;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.svg-submit-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.svg-register {
+  margin: 0.2rem 0 0;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.svg-inline-link {
+  margin-left: 0.2rem;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.svg-form-error {
+  margin: -0.1rem 0 0.3rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.42);
+  color: #ffc2c2;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.svg-form-pending {
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.svg-scroll-hint {
+  fill: #3152f4;
+  font-size: 23px;
+  letter-spacing: -0.08em;
+  font-weight: 600;
+  user-select: none;
+  font-family: "Michroma", system-ui, sans-serif;
+}

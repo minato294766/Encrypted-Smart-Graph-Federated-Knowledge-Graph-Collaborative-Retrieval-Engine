@@ -1,0 +1,1515 @@
+/* ========== Window 5 · 宏观平台 ========== */
+
+.macro-window-page {
+  --w5-font-family: "DingTalk JinBuTi", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  position: relative;
+  width: 100vw;
+  min-width: 100vw;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: var(--w5-font-family);
+}
+
+.macro-window-page,
+.macro-window-page *,
+.macro-window-page *::before,
+.macro-window-page *::after {
+  font-family: var(--w5-font-family) !important;
+}
+
+.macro-window-content-shell {
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - var(--global-top-nav-height));
+  margin-top: var(--global-top-nav-height);
+  overflow: hidden;
+}
+
+/* SVG 画布 — 全屏 */
+.macro-svg-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.macro-svg-canvas line {
+  fill: none;
+  will-change: stroke-dashoffset;
+}
+
+/* 功能模块层 — 位于 SVG 之上，菜单之下 */
+.macro-modules-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  /*
+   * 三列两行网格：
+   *  列: 25%      |  50%        |  25%
+   *  行: 1/2        |  1/2
+   * d3 横跨中间列整两行
+   */
+  grid-template-columns: 25fr 50fr 25fr;
+  grid-template-rows: 1fr 1fr;
+  pointer-events: none;
+}
+
+/* 各区域定位 */
+.macro-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.macro-zone--d1 {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.macro-zone--d2 {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.macro-zone--d3 {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.macro-zone--d4 {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.macro-zone--d5 {
+  grid-column: 3;
+  grid-row: 2;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+/* 区域标签（仅供 d2 / d4 / d5 / d3 占位用） */
+.macro-zone-label {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.7rem, 1vw, 0.9rem);
+  letter-spacing: 0.1em;
+  color: rgba(30, 25, 25, 0.6);
+  user-select: none;
+}
+
+.macro-zone--d3 .macro-zone-label {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+}
+
+/* ========== D1 时间轴 ========== */
+
+/* d1 区域自身需填满格子 */
+.macro-zone--d1 {
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+/* 根容器 */
+.d1tl-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  color: #1e1919;
+  overflow: hidden;
+}
+
+/* ── 标题栏 ── */
+.d1tl-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 8px 10px;
+  border-bottom: 1px solid rgba(30,25,25,0.1);
+  flex-shrink: 0;
+}
+
+.d1tl-header-dot {
+  width: 24px;
+  height: 7px;
+  border-radius: 0;
+  background: transparent;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.d1tl-header-dot::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 8px 3px rgba(59, 130, 246, 0.75);
+  animation: d1tl-blink 1.8s ease-in-out infinite;
+}
+
+.d1tl-header-title {
+  font-size: clamp(0.6rem, 0.85vw, 0.82rem);
+  letter-spacing: 0.12em;
+  color: #1e1919;
+  font-weight: 400;
+  flex: 1;
+}
+
+/* ── 滚动容器 ── */
+.d1tl-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 隐藏所有浏览器原生滚动条 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.d1tl-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── 状态占位行（加载中 / 空记录 / 错误） ── */
+.d1tl-status {
+  padding: 18px 12px;
+  font-size: clamp(0.58rem, 0.8vw, 0.76rem);
+  color: rgba(30, 25, 25, 0.45);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.d1tl-status--error {
+  color: rgba(220, 38, 38, 0.75);
+}
+
+/* ── 内部轨道 ── */
+.d1tl-track {
+  padding: 12px 12px 20px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 单条记录 ── */
+/* 初始不可见，由 GSAP 负责动画入场，防止画布展开期间闪现 */
+.d1tl-item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(15px);
+  will-change: opacity, transform;
+}
+
+/* ── 左轴 ── */
+.d1tl-axis {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+/* 物理阻尼声呐节点 (Framer Motion) */
+.d1tl-dot-sonar {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.sonar-core {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 10px 3px rgba(59, 130, 246, 0.8), 0 0 20px 6px rgba(59, 130, 246, 0.4);
+  z-index: 3;
+  animation: d1tl-sonar-core 2s ease-in-out infinite;
+}
+
+.sonar-wave {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1.5px solid #60a5fa;
+  z-index: 1;
+  animation: d1tl-sonar-wave 2s ease-out infinite;
+}
+
+.sonar-wave-delay {
+  animation-delay: 1s;
+}
+
+/* 同心圆普通节点 */
+.d1tl-dot-concentric {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.concentric-inner {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3b82f6;
+  z-index: 2;
+}
+
+.concentric-outer {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(59, 130, 246, 0.4);
+  z-index: 1;
+}
+
+/* 分段式链条连接线 */
+.d1tl-chain {
+  flex: 1;
+  width: 2px;
+  min-height: 22px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(59, 130, 246, 0.4) 0px,
+    rgba(59, 130, 246, 0.4) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+/* ── 右侧内容 ── */
+.d1tl-content {
+  flex: 1;
+  padding-bottom: 20px;
+}
+
+.d1tl-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.d1tl-time {
+  font-size: clamp(0.6rem, 0.85vw, 0.8rem);
+  font-weight: 700;
+  color: #1e1919;
+  letter-spacing: 0.04em;
+}
+
+.d1tl-date {
+  font-size: clamp(0.55rem, 0.75vw, 0.72rem);
+  color: rgba(30,25,25,0.5);
+  letter-spacing: 0.05em;
+}
+
+.d1tl-text {
+  font-size: clamp(0.65rem, 0.9vw, 0.82rem);
+  color: rgba(30,25,25,0.8);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.d1tl-actor {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #3b82f6;
+}
+
+/* ── Keyframes ── */
+
+@keyframes d1tl-sonar-core {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.85); opacity: 0.85; }
+}
+
+@keyframes d1tl-sonar-wave {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes d1tl-blink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.5; }
+}
+
+/* ========== D2 数据可视化面板 ========== */
+
+/* d2 区域自身需填满格子 */
+.macro-zone--d2 {
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+/* D2 根容器 */
+.d2viz-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  color: #1e1919;
+  overflow: hidden;
+}
+
+/* ── 标题栏（复用 d1tl-header 基础样式，扩展时间段按钮） ── */
+.d2viz-header, .d3viz-header, .d5cloud-header {
+  /* 初始隐藏，由 GSAP 设置 autoAlpha 浮现 */
+  visibility: hidden;
+  opacity: 0;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.d3viz-root {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  color: #eeeeee;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.d3three-root {
+  --d3-scene-vertical-lift: 28px;
+  --d3-scene-header-reserve: 44px;
+  --d3-info-panel-top: 36px;
+  position: relative;
+  background:
+    radial-gradient(circle at 22% 14%, rgba(86, 187, 255, 0.13), transparent 42%),
+    radial-gradient(circle at 84% 78%, rgba(104, 224, 255, 0.11), transparent 48%),
+    linear-gradient(160deg, rgba(240, 249, 255, 0.96), rgba(228, 242, 255, 0.94));
+}
+
+.d3three-canvas-wrap {
+  width: 100%;
+  height: calc(100% + var(--d3-scene-vertical-lift));
+  padding-top: max(0px, calc(var(--d3-scene-header-reserve) - var(--d3-scene-vertical-lift)));
+  box-sizing: border-box;
+  transform: translateY(calc(-1 * var(--d3-scene-vertical-lift)));
+  visibility: hidden;
+  opacity: 0;
+}
+
+.d3three-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.d3viz-canvas-wrap {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.d3viz-canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* D3 专属青色点（使用类似 D4 的色调或特定色调） */
+.d3viz-dot::after {
+  background: #00d2ff;
+  box-shadow: 0 0 8px 3px rgba(0, 210, 255, 0.6);
+}
+
+.d3viz-header .d1tl-header-title {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.6rem, 0.85vw, 0.82rem);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: #1e1919;
+}
+
+.d3viz-header input,
+.d3viz-header textarea {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.6rem, 0.85vw, 0.82rem);
+  color: #1e1919;
+}
+
+.d3viz-header input::placeholder,
+.d3viz-header textarea::placeholder {
+  color: rgba(30, 25, 25, 0.45);
+}
+
+.d3viz-ticker {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  width: 100%;
+  background: rgba(12, 18, 24, 0.85);
+  color: rgba(226, 240, 255, 0.94);
+  overflow: hidden;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+}
+
+.d3viz-ticker-track {
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+  animation: d3TickerScroll 28s linear infinite;
+  font-family: "Michroma", "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.d3viz-ticker-track span {
+  padding: 0 1.25rem;
+  border-right: 1px solid rgba(226, 240, 255, 0.2);
+}
+
+/* ========== D3 板块实体弹窗卡片 ========== */
+
+.d3viz-popup-overlay {
+  pointer-events: none;
+}
+
+.d3popup-root {
+  pointer-events: none;
+}
+
+.card-title {
+  color: #262626;
+  font-size: 1.5em;
+  line-height: normal;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.small-desc {
+  font-size: 1em;
+  font-weight: 400;
+  line-height: 1.5em;
+  color: #452c2c;
+}
+
+.small-desc {
+  font-size: 1em;
+}
+
+.go-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 2em;
+  height: 2em;
+  overflow: hidden;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #6293c8, #384c6c);
+  border-radius: 0 4px 0 32px;
+}
+
+.go-arrow {
+  margin-top: -4px;
+  margin-right: -4px;
+  color: white;
+  font-family: courier, sans;
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cardExit {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.93); }
+}
+
+.card {
+  display: block;
+  position: relative;
+  max-width: 310px;
+  max-height: 360px;
+  background-color: #f2f8f9;
+  border-radius: 10px;
+  padding: 1.5em 1.2em 1.8em;
+  margin: 12px;
+  text-decoration: none;
+  z-index: 0;
+  overflow: hidden;
+  background: #9CD5FF;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  pointer-events: auto;
+  will-change: opacity, transform;
+  animation: cardEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  border: 1.5px solid rgba(68, 172, 255, 0.45);
+  box-shadow: 0 0 18px rgba(68, 172, 255, 0.22), 0 4px 24px rgba(0,0,0,0.08);
+}
+
+.card.card--exiting {
+  animation: cardExit 0.18s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+/* ── Red card variant (high-permission node) ── */
+.card.card--red {
+  background: #ffe8e8;
+  border: 1.5px solid rgba(220, 60, 60, 0.55);
+  box-shadow: 0 0 22px rgba(220, 60, 60, 0.28), 0 4px 24px rgba(0,0,0,0.1);
+}
+
+.card.card--red::before {
+  background: #D96868;
+}
+
+.card.card--red:hover::before {
+  transform: scale(28);
+}
+
+.card.card--red .card-title {
+  color: #8b1010;
+}
+
+.card.card--red .small-desc {
+  color: #5c1818;
+}
+
+.card.card--red .card-type-badge {
+  background: rgba(220, 60, 60, 0.12);
+  color: #c01010;
+  border: 1px solid rgba(220, 60, 60, 0.3);
+}
+
+/* ── Type badge above card title ── */
+.card-type-badge {
+  display: inline-block;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: 0.65em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(68, 172, 255, 0.14);
+  color: #1a5fa8;
+  border: 1px solid rgba(68, 172, 255, 0.28);
+  margin-bottom: 0.55em;
+  text-transform: uppercase;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -16px;
+  right: -16px;
+  background: #44ACFF;
+  height: 32px;
+  width: 32px;
+  border-radius: 32px;
+  transform: scale(1);
+  transform-origin: 50% 50%;
+  transition: transform 0.35s ease-out;
+}
+
+.card:hover:before {
+  transform: scale(28);
+}
+
+.card:hover .small-desc {
+  transition: all 0.5s ease-out;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.card:hover .card-title {
+  transition: all 0.5s ease-out;
+  color: #ffffff;
+}
+
+/* ========== D3 区标题栏（继承 d1tl-header 风格，绝对定位覆盖于地图顶部）========== */
+
+/* 覆盖为绝对定位，使标题栏悬浮于地图容器顶部 */
+.d3viz-header.d1tl-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 160, 220, 0.15);
+  backdrop-filter: none;
+}
+
+/* D3 顶栏强化: 白底黑字 */
+.d3viz-header.d1tl-header .d1tl-header-title {
+  color: #111111;
+  font-weight: 400;
+}
+
+/* ========== SVG Flat Map-Pin Layer ========== */
+
+/* Pin layer — no 3D transform; renders in standard SVG coordinate plane */
+.pin-layer-upright {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Individual pin groups — GPU-composited */
+[id^="pin-g-"] {
+  will-change: opacity, transform;
+}
+
+/* Highlight rings — GSAP controls opacity */
+[id^="pin-active-outer-"],
+[id^="pin-active-inner-"] {
+  pointer-events: none;
+}
+
+/* Pulse ring */
+[id^="pin-pulse-"] {
+  will-change: opacity, r;
+  pointer-events: none;
+}
+
+/* Low-perf degradation */
+.perf-reduced [id^="pin-pulse-"] {
+  display: none;
+}
+
+/* ========== 板块浅蓝系覆盖 ========== */
+
+/* 板块 cursor 指针确保 */
+.district-group {
+  cursor: pointer;
+}
+
+/* 板块 hover 轻微亮度提升 (CSS辅助, GSAP主控) */
+.district-group:hover [id^="d3-top-"] {
+  filter: brightness(1.06);
+}
+
+.d5cloud-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  color: #1e1919;
+  background: transparent;
+  overflow: hidden;
+}
+
+.d5cloud-header .d1tl-header-title {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.6rem, 0.85vw, 0.82rem);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: #1e1919;
+}
+
+.d5cloud-dot::after {
+  background: #9ab7cb;
+  box-shadow: 0 0 8px 3px rgba(154, 183, 203, 0.36);
+}
+
+.d5cloud-canvas-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.d5cloud-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  text-rendering: geometricPrecision;
+}
+
+.d5cloud-canvas-reveal {
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+}
+
+.d5cloud-word {
+  opacity: 0;
+  visibility: hidden;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+  paint-order: stroke fill;
+  stroke: rgba(255, 255, 255, 0.52);
+  stroke-width: 0.45px;
+  user-select: none;
+}
+
+/* 右侧时间段选择器组 */
+.d2viz-period-selector {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: auto;
+  border-left: 1px solid rgba(30,25,25,0.1);
+  padding-left: 8px;
+}
+
+/* ── 时间段按钮 ── */
+.d2viz-period-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 7px 5px;
+  line-height: 1;
+  border-radius: 0;
+  transition: color 0.22s ease;
+  color: rgba(30,25,25,0.45);
+  outline: none;
+}
+
+.d2viz-period-btn-text {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.55rem, 0.7vw, 0.66rem);
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+  transition: color 0.22s ease, transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* 激活态：颜色亮起 */
+.d2viz-period-btn--active {
+  color: #6367FF;
+}
+.d2viz-period-btn--active .d2viz-period-btn-text {
+  transform: translateY(-1px);
+}
+
+/* 激活态下划线 bar（有动画） */
+.d2viz-period-btn-bar {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, #6367FF, #C9BEFF);
+  border-radius: 2px;
+  animation: d2viz-bar-slide-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes d2viz-bar-slide-in {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* hover 态 */
+.d2viz-period-btn:not(.d2viz-period-btn--active):hover {
+  color: #9699FF;
+}
+.d2viz-period-btn:not(.d2viz-period-btn--active):hover .d2viz-period-btn-text {
+  transform: translateY(-1px);
+}
+
+/* ── 柱状图区域 ── */
+.d2viz-chart-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 8px 16px 12px 12px;
+  box-sizing: border-box;
+}
+
+/* 单行 */
+.d2viz-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 柱轨：决定可用宽度，约占行宽 75% */
+.d2viz-bar-track {
+  flex: 1;
+  height: clamp(10px, 1.8vh, 18px);
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* 实际柱体 — 初始状态 width:0 opacity:0 由 GSAP 控制，圆角胶囊（右端） */
+.d2viz-bar {
+  height: 100%;
+  width: 0%;
+  opacity: 0;
+  border-radius: 0 100px 100px 0;
+  will-change: width, opacity;
+  /* 微光效果 */
+  box-shadow: 0 0 8px rgba(99, 103, 255, 0.25);
+}
+
+/* 右侧文字标签 — 初始隐藏 */
+.d2viz-label {
+  visibility: hidden;
+  opacity: 0;
+  min-width: 52px;
+  font-size: clamp(0.55rem, 0.72vw, 0.68rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transform: translateY(0); /* y will be reset by GSAP from initial .d1tl-item style */
+}
+
+/* 文字后数值 */
+.d2viz-value {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+/* ========== D4 节点数据库价值监测 ========== */
+
+.macro-zone--d4 {
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+.d4viz-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  color: #1e1919;
+  background: transparent; /* 采用下方 SVG 统一的粉白底色 */
+  overflow: hidden;
+  /* 预留右侧空间给菜单按钮 */
+  padding-right: 20px;
+}
+
+/* 时间选择器独立行 — 现在作为副标题栏 */
+.d4viz-period-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 6px;
+  border-bottom: 1px solid rgba(8, 145, 178, 0.08);
+  background: rgba(8, 145, 178, 0.02); /* 极淡的底色区分 */
+  /* 预留右侧空间给可能的悬浮球 */
+  padding-right: 70px;
+}
+
+.d4viz-period-selector {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.d4viz-period-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 7px 5px;
+  line-height: 1;
+  border-radius: 0;
+  transition: color 0.22s ease;
+  color: rgba(30, 25, 25, 0.4);
+  outline: none;
+}
+
+.d4viz-period-btn-text {
+  font-family: inherit;
+  font-size: clamp(0.55rem, 0.7vw, 0.66rem);
+  letter-spacing: 0.06em;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+  transition: color 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.d4viz-period-btn--active {
+  color: #0891b2;
+}
+
+.d4viz-period-btn--active .d4viz-period-btn-text {
+  transform: translateY(-1px);
+}
+
+.d4viz-period-btn-bar {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, #0891b2, #67e8f9);
+  border-radius: 2px;
+  animation: d2viz-bar-slide-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.d4viz-period-btn:not(.d4viz-period-btn--active):hover {
+  color: #0e7490;
+}
+
+.d4viz-period-btn:not(.d4viz-period-btn--active):hover .d4viz-period-btn-text {
+  transform: translateY(-1px);
+}
+
+/* D4 专属青色点 */
+.d4viz-dot::after {
+  background: #0891b2;
+  box-shadow: 0 0 8px 3px rgba(8, 145, 178, 0.6);
+}
+
+.d4viz-chart-container {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.d4viz-svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+.d4viz-axis-text {
+  font-size: 14px;
+  fill: rgba(30, 25, 25, 0.6);
+  font-weight: 400;
+  user-select: none;
+}
+
+.d4viz-footer {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(30,25,25,0.05);
+  font-size: 10px;
+  color: rgba(30,25,25,0.4);
+  background: rgba(30,25,25,0.01);
+}
+
+.d4viz-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.d4viz-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: d4viz-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes d4viz-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.d4viz-time-indicator {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+/* ========== D3 节点游标 (Three.js Html overlay) ========== */
+
+.d3-node-cursor {
+  position: relative;
+  width: 30px;
+  height: 39px;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -100%);
+  will-change: filter, transform;
+  user-select: none;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.d3-node-cursor:hover {
+  transform: translate(-50%, -110%) scale(1.12);
+}
+
+.d3-node-cursor svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* Selected: lift + glow */
+.d3-node-cursor--selected {
+  transform: translate(-50%, -118%) scale(1.1);
+  filter: drop-shadow(0 0 5px rgba(220, 50, 50, 0.95))
+          drop-shadow(0 0 14px rgba(220, 50, 50, 0.55))
+          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.45));
+}
+
+.d3-node-cursor--blue.d3-node-cursor--selected {
+  filter: drop-shadow(0 0 5px rgba(68, 172, 255, 0.95))
+          drop-shadow(0 0 14px rgba(68, 172, 255, 0.55))
+          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+}
+
+.d3-node-cursor--orange.d3-node-cursor--selected {
+  filter: drop-shadow(0 0 5px rgba(234, 88, 12, 0.9))
+          drop-shadow(0 0 14px rgba(251, 146, 60, 0.52))
+          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.42));
+}
+
+.d3-node-cursor--yellow.d3-node-cursor--selected {
+  filter: drop-shadow(0 0 4px rgba(47, 214, 138, 0.46))
+          drop-shadow(0 0 10px rgba(47, 214, 138, 0.24))
+          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.42));
+}
+
+.d3-node-cursor--selected:hover {
+  transform: translate(-50%, -122%) scale(1.14);
+}
+
+/* Pulse ring */
+.d3-node-cursor-pulse {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.d3-node-cursor--red.d3-node-cursor--selected .d3-node-cursor-pulse {
+  opacity: 1;
+  border: 1.5px solid rgba(220, 50, 50, 0.7);
+  animation: d3-node-pulse-red 1.6s ease-out infinite;
+}
+
+.d3-node-cursor--blue.d3-node-cursor--selected .d3-node-cursor-pulse {
+  opacity: 1;
+  border: 1.5px solid rgba(68, 172, 255, 0.7);
+  animation: d3-node-pulse-blue 1.6s ease-out infinite;
+}
+
+.d3-node-cursor--orange.d3-node-cursor--selected .d3-node-cursor-pulse {
+  opacity: 1;
+  border: 1.5px solid rgba(234, 88, 12, 0.65);
+  animation: d3-node-pulse-orange 1.6s ease-out infinite;
+}
+
+.d3-node-cursor--yellow.d3-node-cursor--selected .d3-node-cursor-pulse {
+  opacity: 1;
+  border: 1.5px solid rgba(47, 214, 138, 0.42);
+  animation: d3-node-pulse-yellow 1.6s ease-out infinite;
+}
+
+@keyframes d3-node-pulse-red {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+
+@keyframes d3-node-pulse-blue {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+
+@keyframes d3-node-pulse-orange {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.82; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+
+@keyframes d3-node-pulse-yellow {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.82; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+
+/* Node label tooltip */
+.d3-node-label {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: #1e1919;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(30, 25, 25, 0.12);
+  border-radius: 3px;
+  padding: 2px 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.d3-node-cursor--selected .d3-node-label,
+.d3-node-cursor:hover .d3-node-label {
+  opacity: 1;
+}
+
+.d3-node-label--red {
+  border-color: rgba(220, 50, 50, 0.25);
+  color: #8b1010;
+}
+
+.d3-node-label--orange {
+  border-color: rgba(234, 88, 12, 0.3);
+  color: #9a3412;
+  background: rgba(255, 237, 213, 0.94);
+}
+
+.d3-node-label--yellow {
+  border-color: rgba(47, 214, 138, 0.42);
+  color: #167c52;
+  background: rgba(215, 249, 233, 0.94);
+}
+
+/* ========== D3 信息面板 (水平横屏画布) ========== */
+
+/* CSS-first hidden state — GSAP drives visibility */
+.d3-info-canvas {
+  position: absolute;
+  top: var(--d3-info-panel-top);
+  left: 0;
+  right: 0;
+  z-index: 8;
+  height: 0;
+  visibility: hidden;
+  opacity: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid rgba(0, 160, 220, 0.14);
+  will-change: height, opacity;
+}
+
+.d3-info-canvas-inner {
+  display: flex;
+  align-items: stretch;
+  height: 88px;
+  overflow: hidden;
+  will-change: opacity;
+}
+
+/* ── ID 区 (左) ── */
+.d3-info-id-col {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0 16px;
+  min-width: 178px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(30, 25, 25, 0.08);
+}
+
+.d3-info-node-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.d3-info-node-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.d3-info-cursor-thumb {
+  width: 20px;
+  height: 24px;
+  flex-shrink: 0;
+  overflow: visible;
+  display: block;
+}
+
+.d3-info-node-name {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.98rem, 1.26vw, 1.2rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #1e1919;
+  line-height: 1.12;
+}
+
+.d3-info-node-name--red {
+  color: #8b1010;
+}
+
+.d3-info-node-name--orange {
+  color: #c2410c;
+}
+
+.d3-info-self-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(22, 124, 82, 0.52);
+  background: rgba(22, 124, 82, 0.16);
+  color: #0c6f4f;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+}
+
+.d3-info-self-tag--red {
+  border-color: rgba(220, 38, 38, 0.55);
+  background: rgba(220, 38, 38, 0.16);
+  color: #8b1010;
+}
+
+.d3-info-self-tag--center-orange {
+  border-color: rgba(234, 88, 12, 0.52);
+  background: rgba(234, 88, 12, 0.14);
+  color: #c2410c;
+}
+
+.d3-info-node-code {
+  font-family: "Michroma", "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.52rem, 0.68vw, 0.62rem);
+  letter-spacing: 0.13em;
+  color: rgba(30, 25, 25, 0.4);
+  text-transform: uppercase;
+}
+
+.d3-info-node-code--red {
+  color: rgba(180, 20, 20, 0.5);
+}
+
+/* ── 指标区 (中) ── */
+.d3-info-metrics {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  padding: 0 4px;
+}
+
+.d3-info-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 16px;
+  border-right: 1px solid rgba(30, 25, 25, 0.07);
+  min-width: 76px;
+}
+
+.d3-info-metric:last-child {
+  border-right: none;
+}
+
+.d3-info-metric-val {
+  font-family: "Michroma", "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.88rem, 1.25vw, 1.12rem);
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.d3-info-metric-val--red {
+  color: #b91c1c;
+}
+
+.d3-info-metric-val--orange {
+  color: #c2410c;
+}
+
+.d3-info-metric-lbl {
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.48rem, 0.63vw, 0.58rem);
+  letter-spacing: 0.1em;
+  color: rgba(30, 25, 25, 0.42);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── 状态区 (右) ── */
+.d3-info-status-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  min-width: 100px;
+  flex-shrink: 0;
+  border-left: 1px solid rgba(30, 25, 25, 0.08);
+}
+
+.d3-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.d3-info-badge--online {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.d3-info-badge--online::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+  animation: d4viz-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.d3-info-badge--restricted {
+  background: rgba(220, 60, 60, 0.09);
+  color: #b91c1c;
+  border: 1px solid rgba(220, 60, 60, 0.26);
+}
+
+.d3-info-badge--center-orange {
+  background: rgba(234, 88, 12, 0.1);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+.d3-info-badge--restricted::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: d4viz-pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.d3-info-badge--center-orange::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ea580c;
+  flex-shrink: 0;
+  animation: d4viz-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.d3-info-badge--self-normal {
+  background: rgba(47, 214, 138, 0.16);
+  color: #167c52;
+  border: 1px solid rgba(47, 214, 138, 0.42);
+}
+
+.d3-info-badge--self-normal::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #2FD68A;
+  flex-shrink: 0;
+  animation: d4viz-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.d3-info-metric--self-normal {
+  border-right-color: rgba(47, 214, 138, 0.28);
+}
+
+.d3-info-metric-val--self-normal {
+  color: #167c52;
+}
+
+.d3-info-metric-lbl--self-normal {
+  color: rgba(22, 124, 82, 0.8);
+}
+
+.d3-info-lastseen {
+  font-family: "Michroma", "DingTalk JinBuTi", system-ui, sans-serif;
+  font-size: clamp(0.5rem, 0.65vw, 0.6rem);
+  color: rgba(30, 25, 25, 0.38);
+  letter-spacing: 0.07em;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes d3TickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
