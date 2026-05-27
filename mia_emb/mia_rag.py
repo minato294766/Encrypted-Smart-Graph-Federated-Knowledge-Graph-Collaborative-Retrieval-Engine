@@ -213,6 +213,8 @@ class MiARAG:
         await self._setup_lightrag(lang)
         logger.info("LightRAG initialized")
 
+        self._load_mindscape()
+
     async def close(self):
         """Finalize storages and restore global state."""
         if self.rag:
@@ -646,7 +648,28 @@ class MiARAG:
 
         logger.info(f"  Chunks: {len(all_chunks)}")
         self.mindscape = await self.summarizer.build_mindscape(all_chunks)
+        self._save_mindscape()
         logger.info(f"  Mindscape: {len(self.mindscape)} chars ({time.time() - t0:.1f}s)")
+
+    # ── Mindscape Persistence ────────────────────────────────────
+
+    @property
+    def _mindscape_path(self) -> Path:
+        return Path(self.working_dir) / "mindscape.txt"
+
+    def _load_mindscape(self):
+        """Load cached mindscape from disk if available."""
+        if self._mindscape_path.exists():
+            cached = self._mindscape_path.read_text(encoding="utf-8").strip()
+            if cached:
+                self.mindscape = cached
+                logger.info(f"Loaded mindscape from disk ({len(cached)} chars)")
+
+    def _save_mindscape(self):
+        """Persist mindscape to disk."""
+        if self.mindscape:
+            self._mindscape_path.parent.mkdir(parents=True, exist_ok=True)
+            self._mindscape_path.write_text(self.mindscape, encoding="utf-8")
 
     # ── Internal: Prompt State ────────────────────────────────────
 

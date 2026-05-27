@@ -81,17 +81,23 @@ def get_current_user(
     return user
 
 
-# ── RAG Instance (lazy singleton) ────────────────────────────────
+# ── RAG Manager (per-user isolation) ────────────────────────────
 
-_rag_instance: Optional[object] = None
+_rag_manager = None
 
 
-def get_rag():
-    """Return the global MiARAG instance. Initialized on first request."""
-    global _rag_instance
-    if _rag_instance is None:
+def get_rag_manager():
+    """Return the MiARAGManager instance. Initialized on startup."""
+    global _rag_manager
+    if _rag_manager is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="RAG engine not initialized yet. Please wait.",
         )
-    return _rag_instance
+    return _rag_manager
+
+
+async def get_user_rag(user_id: int):
+    """Convenience: get the RAG instance for a specific user."""
+    manager = get_rag_manager()
+    return await manager.get_user_rag(user_id)

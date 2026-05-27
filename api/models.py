@@ -22,16 +22,21 @@ class User(Base):
     password_hash = Column(String(256), nullable=False)
     email = Column(String(128), nullable=True)
     role = Column(String(32), default="user")  # "user", "admin"
+    status = Column(String(32), default="pending")  # "pending", "approved", "rejected"
     node_id = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=_utcnow)
 
     queries = relationship("QueryLog", back_populates="user")
+    conversations = relationship("ChatConversation", back_populates="user")
+    clusters = relationship("Cluster", back_populates="user")
+    documents = relationship("Document", back_populates="user")
 
 
 class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     filename = Column(String(256), nullable=False)
     file_path = Column(String(512), nullable=False)
     size_bytes = Column(Integer, default=0)
@@ -40,18 +45,20 @@ class Document(Base):
     status = Column(String(32), default="pending")  # pending, processing, ready, error
     uploaded_at = Column(DateTime, default=_utcnow)
 
+    user = relationship("User", back_populates="documents")
+
 
 class QueryLog(Base):
     __tablename__ = "query_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    question = Column(Text, nullable=False)
+    question = Column(Text, nullable=True)  # nullable for compliance mode
     answer = Column(Text, nullable=True)
     confidence = Column(Float, nullable=True)
     mode = Column(String(32), default="mix")
     mindscape_used = Column(Integer, default=0)
-    evidence_json = Column(Text, nullable=True)  # JSON-serialized evidence list
+    evidence_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=_utcnow)
 
     user = relationship("User", back_populates="queries")
@@ -69,3 +76,61 @@ class Node(Base):
     description = Column(Text, nullable=True)
     center_application = Column(Text, nullable=True)  # reason for center node application
     registered_at = Column(DateTime, default=_utcnow)
+
+
+class ChatConversation(Base):
+    __tablename__ = "chat_conversations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(256), default="新对话")
+    mode = Column(String(32), default="mix")  # local, global, hybrid, mix, naive
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", back_populates="conversations")
+    messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    conversation_id = Column(Integer, ForeignKey("chat_conversations.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String(32), nullable=False)  # "user", "assistant"
+    content = Column(Text, nullable=False)
+    confidence = Column(Float, nullable=True)
+    evidence_json = Column(Text, nullable=True)  # JSON-serialized evidence list
+    created_at = Column(DateTime, default=_utcnow)
+
+    conversation = relationship("ChatConversation", back_populates="messages")
+
+
+class Cluster(Base):
+    __tablename__ = "clusters"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(256), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", back_populates="clusters")
+    files = relationship("ClusterFile", back_populates="cluster", cascade="all, delete-orphan")
+
+
+class ClusterFile(Base):
+    __tablename__ = "cluster_files"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    cluster_id = Column(Integer, ForeignKey("clusters.id", ondelete="CASCADE"), nullable=False)
+    filename = Column(String(256), nullable=False)
+    file_path = Column(String(512), nullable=False)
+    size_bytes = Column(Integer, default=0)
+    mime_type = Column(String(128), default="application/octet-stream")
+    content = Column(Text, nullable=True)
+    status = Column(String(32), default="ready")  # pending, processing, ready, error
+    uploaded_at = Column(DateTime, default=_utcnow)
+
+    cluster = relationship("Cluster", back_populates="files")

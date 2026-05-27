@@ -42,6 +42,9 @@ sys.path.insert(0, str(_project_root))
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 logger = logging.getLogger("node_server")
 
+# Suppress LightRAG's verbose internal logging on startup
+logging.getLogger("lightrag").setLevel(logging.WARNING)
+
 # ── SM4 + SM3 Encryption ─────────────────────────────────────────
 
 def _load_sm4_key() -> bytes:
@@ -111,44 +114,141 @@ class QueryResponse(BaseModel):
     tag: str = ""  # Optional SM3 integrity tag
 
 
-# ── RAG Engine ───────────────────────────────────────────────────
+# ── RAG Manager (per-user isolation) ──────────────────────────────
 
-_rag = None
+_rag_manager = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _rag
-    logger.info("Loading MiA-RAG engine...")
-    from mia_emb import MiAConfig, MiARAG
+    global _rag_manager
+    logger.info("Loading MiA-RAG engine (per-user isolation)...")
+    from mia_emb import MiAConfig
+    from mia_emb.rag_manager import MiARAGManager
 
     config = MiAConfig(
         model_path=os.getenv("MODEL_PATH", "MindscapeRAG/MiA-Emb-8B"),
         base_model_path=os.getenv("BASE_MODEL_PATH", "Qwen/Qwen3-Embedding-8B"),
         deepseek_api_key=os.getenv("DEEPSEEK_API_KEY", ""),
     )
-    from api.database import Base, engine as db_engine
+    from api.database import Base, SessionLocal, engine as db_engine
     Base.metadata.create_all(bind=db_engine)
 
-    _rag = MiARAG(config=config, working_dir="./mia_rag_storage")
-    await _rag.initialize(lang="zh")
+    # 自动迁移：给旧表添加缺失的列
+    import sqlite3
+    db_path = "./mia_rag_storage/api.db"
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "status" not in columns:
+            logger.info("Migrating: adding 'status' column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN status VARCHAR(32) DEFAULT 'pending'")
+            conn.commit()
+            logger.info("Migration complete ✓")
 
-    # Auto-load documents from DOC_DIR if set and mindscape not yet built
+        cursor.execute("PRAGMA table_info(documents)")
+        doc_columns = [row[1] for row in cursor.fetchall()]
+        if "user_id" not in doc_columns:
+            logger.info("Migrating: adding 'user_id' column to documents table...")
+            cursor.execute("ALTER TABLE documents ADD COLUMN user_id INTEGER REFERENCES users(id)")
+            cursor.execute("UPDATE documents SET user_id = 1 WHERE user_id IS NULL")
+            conn.commit()
+            logger.info("Migration complete ✓")
+        conn.close()
+    except Exception as e:
+        logger.warning(f"Migration check: {e}")
+
+    # 创建默认管理员账号（如果不存在）
+    db = SessionLocal()
+    try:
+        from api.models import User
+        from api.deps import hash_password
+
+        admin_user = db.query(User).filter(User.username == "admin").first()
+        if not admin_user:
+            logger.info("Creating default admin user (admin/admin123456)...")
+            admin = User(
+                username="admin",
+                password_hash=hash_password("admin123456"),
+                email="admin@mia-rag.local",
+                role="admin",
+                status="approved",
+            )
+            db.add(admin)
+            db.commit()
+            logger.info("Default admin user created ✓")
+        elif admin_user.status != "approved":
+            admin_user.status = "approved"
+            admin_user.role = "admin"
+            db.commit()
+            logger.info("Admin user status updated ✓")
+    finally:
+        db.close()
+
+    _rag_manager = MiARAGManager(config=config, base_dir="./mia_rag_storage")
+    await _rag_manager.initialize(lang="zh")
+
+    # Auto-load documents from DOC_DIR into admin user's RAG
     doc_dir = os.getenv("DOC_DIR", "").strip()
-    if doc_dir and not _rag.mindscape:
+    if doc_dir:
         docs = _load_documents(doc_dir)
         if docs:
-            logger.info(f"Loading {len(docs)} documents from {doc_dir}...")
-            await _rag.insert_documents(docs)
+            logger.info(f"Loading {len(docs)} documents from {doc_dir} into admin RAG...")
+            admin_rag = await _rag_manager.get_user_rag(1)  # admin = user 1
+            await admin_rag.insert_documents(docs)
 
-    # Make RAG available to API routers via deps module
+    # Load documents from database (per-user)
+    db2 = SessionLocal()
+    try:
+        from api.models import Document, ClusterFile, Cluster
+        from collections import defaultdict
+
+        # Group documents by user_id
+        ready_docs = db2.query(Document).filter(Document.status == "ready").all()
+        user_docs: dict[int, list[str]] = defaultdict(list)
+        for d in ready_docs:
+            if d.content and d.user_id:
+                user_docs[d.user_id].append(d.content)
+
+        # Group cluster files by owner
+        cluster_files = (
+            db2.query(ClusterFile)
+            .join(Cluster)
+            .filter(ClusterFile.status == "ready")
+            .all()
+        )
+        for cf in cluster_files:
+            if cf.content:
+                cluster = db2.query(Cluster).filter(Cluster.id == cf.cluster_id).first()
+                if cluster and cluster.user_id:
+                    user_docs[cluster.user_id].append(cf.content)
+
+        # Load into per-user RAG instances
+        total_loaded = 0
+        for user_id, contents in user_docs.items():
+            if contents:
+                logger.info(f"Loading {len(contents)} documents for user {user_id}...")
+                user_rag = await _rag_manager.get_user_rag(user_id)
+                await user_rag.insert_documents(contents)
+                total_loaded += len(contents)
+
+        if total_loaded:
+            logger.info(f"Loaded {total_loaded} total documents across {len(user_docs)} users")
+        else:
+            logger.info("No documents found in database")
+    finally:
+        db2.close()
+
+    # Make manager available to API routers via deps module
     import api.deps as deps
-    deps._rag_instance = _rag
+    deps._rag_manager = _rag_manager
 
     logger.info("Node server ready ✓")
     yield
-    if _rag:
-        await _rag.close()
+    if _rag_manager:
+        await _rag_manager.close()
 
 
 def _load_documents(doc_dir: str) -> list[str]:
@@ -200,7 +300,8 @@ async def query(req: QueryRequest, request: Request):
 
     logger.info(f"[{request_id}] Query: {question[:60]}...")
 
-    result = await _rag.query(question, use_dual_channel=True)
+    # Federation node queries across all users' knowledge graphs
+    result = await _rag_manager.query_global(question)
 
     payload = json.dumps({
         "answer": result["answer"],
@@ -231,8 +332,8 @@ async def health(request: Request):
     return {
         "request_id": request_id,
         "status": "ok",
-        "model_loaded": _rag is not None and _rag.mia_embedding is not None,
-        "mindscape_ready": bool(_rag.mindscape) if _rag else False,
+        "model_loaded": _rag_manager is not None and _rag_manager._embedding is not None,
+        "user_count": len(_rag_manager._user_rags) if _rag_manager else 0,
     }
 
 

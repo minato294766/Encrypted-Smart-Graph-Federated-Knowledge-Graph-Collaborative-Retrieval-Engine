@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     username: str
     email: Optional[str] = None
     role: str
+    status: str = "pending"
     node_id: Optional[str] = None
     created_at: datetime
 
@@ -38,10 +39,24 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class PendingUserResponse(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApproveUserRequest(BaseModel):
+    approved: bool
+
+
 # ── Documents ────────────────────────────────────────────────────
 
 class DocumentResponse(BaseModel):
     id: int
+    user_id: int
     filename: str
     size_bytes: int
     char_count: int
@@ -132,3 +147,108 @@ class HealthResponse(BaseModel):
     mindscape_ready: bool
     document_count: int
     gpu_available: bool
+
+
+# ── Chat History ─────────────────────────────────────────────────
+
+class ChatMessageCreate(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., min_length=1)
+    confidence: Optional[float] = None
+    evidence_json: Optional[str] = None
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    conversation_id: int
+    role: str
+    content: str
+    confidence: Optional[float] = None
+    evidence_json: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ChatConversationCreate(BaseModel):
+    title: str = Field(default="新对话", max_length=256)
+    mode: str = Field(default="mix", pattern="^(local|global|hybrid|mix|naive)$")
+
+
+class ChatConversationResponse(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    mode: str
+    created_at: datetime
+    updated_at: datetime
+    messages: list[ChatMessageResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+class ChatConversationListResponse(BaseModel):
+    total: int
+    conversations: list[ChatConversationResponse]
+
+
+# ── Clusters ─────────────────────────────────────────────────────
+
+class ClusterCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=256)
+    description: Optional[str] = None
+
+
+class ClusterFileResponse(BaseModel):
+    id: int
+    cluster_id: int
+    filename: str
+    size_bytes: int
+    mime_type: str
+    status: str
+    uploaded_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ClusterResponse(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    file_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class ClusterListResponse(BaseModel):
+    total: int
+    clusters: list[ClusterResponse]
+
+
+class ClusterDetailResponse(ClusterResponse):
+    files: list[ClusterFileResponse] = []
+
+
+class DatabaseMetricsResponse(BaseModel):
+    cluster_count: int
+    total_files: int
+    total_size_bytes: int
+    last_added_date: Optional[datetime] = None
+
+
+class DatabaseUpdateResponse(BaseModel):
+    id: str
+    actor: str
+    action: str
+    type: str  # "cluster", "file", "admin"
+    created_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class DatabaseUpdateListResponse(BaseModel):
+    total: int
+    updates: list[DatabaseUpdateResponse]
